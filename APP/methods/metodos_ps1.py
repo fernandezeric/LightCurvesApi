@@ -51,6 +51,7 @@ def ps1ids(ra,dec,radius,nearest):
     columns = ['objID','raMean','decMean']
     results = ps1cone(ra,dec,radius,release='dr2',columns=columns,**constraints)
     results = ascii.read(results)
+    print(results)
 
     if len(results) <= 0:
         return -1
@@ -77,7 +78,7 @@ def ps1curves(ra,dec,radius,format,nearest):
     ids = ps1ids(ra,dec,radius,nearest)
     ps1dic = {}
     #print(ids)
-    if id == -1 :
+    if ids == -1 :
         ps1dic['0'] = 'not found'
         return ps1dic
 

@@ -23,6 +23,7 @@ def radiodegree():
     
     dic = {}
     if 'ps1' in request.form['catalog']:
+        print(ra,dec,radius,format)
         ps1 = ps1curves(ra,dec,radius,format,False)
         jsonify(ps1)
         dic['curve_ps1'] = ps1
@@ -41,8 +42,8 @@ def radio_degree_nearest():
     radius = request.form['radius']
     format = request.form['format']
 
-    if (checkformat(format)): 
-        return "Bad value for format" 
+    if format not in {'csv','votable'}: 
+        return "Record not found", status.HTTP_400_BAD_REQUEST 
     
     dic = {}
     if 'ps1' in request.form['catalog']:
@@ -65,8 +66,8 @@ def radiohours():
     radius = request.form['radius']
     format = request.form['format']
 
-    if (checkformat(format)): 
-        return "Bad value for format" 
+    if format not in {'csv','votable'}: 
+        return "Record not found", status.HTTP_400_BAD_REQUEST 
     
     dic = {}
     if 'ps1' in request.form['catalog']:
@@ -83,5 +84,5 @@ def radiohours():
 
 
 if __name__ == "__main__":
- app.run()
+ app.run()#debug=True
 
