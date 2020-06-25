@@ -10,7 +10,21 @@ from astropy import units as u
 def ps1cone(ra,dec,radius,table="mean",release="dr1",format="csv",columns=None,
            baseurl="https://catalogs.mast.stsci.edu/api/v0.1/panstarrs",
            **kw):
+    """Do a cone search of the PS1 catalog
 
+    Parameters
+    ----------
+    ra (float): (degrees) J2000 Right Ascension
+    dec (float): (degrees) J2000 Declination
+    radius (float): (degrees) Search radius (<= 0.5 degrees)
+    table (string): mean, stack, or detection 
+    release (string): dr1 or dr2 
+    format: csv, votable, json
+    columns: list of column names to include (None means use defaults)
+    baseurl: base URL for the request
+    verbose: print info about request
+    **kw: other parameters (e.g., 'nDetections.min':2)
+    """
     data = kw.copy()
     data['ra'] = ra
     data['dec'] = dec
@@ -18,10 +32,22 @@ def ps1cone(ra,dec,radius,table="mean",release="dr1",format="csv",columns=None,
     return ps1search(table=table,release=release,format=format,columns=columns,
                     baseurl=baseurl, **data)
 
+#https://ps1images.stsci.edu/ps1_dr2_api.html
 def ps1search(format,table="mean",release="dr1",columns=None,
            baseurl="https://catalogs.mast.stsci.edu/api/v0.1/panstarrs",
            **kw):
-           
+    """Do a general search of the PS1 catalog (possibly without ra/dec/radius)
+    
+    Parameters
+    ----------
+    table (string): mean, stack, or detection
+    release (string): dr1 or dr2
+    format: csv, votable, json
+    columns: list of column names to include (None means use defaults)
+    baseurl: base URL for the request
+    verbose: print info about request
+    **kw: other parameters (e.g., 'nDetections.min':2).  Note this is required!
+    """
     data = kw.copy()
     url = f"{baseurl}/{release}/{table}.{format}"
     data['columns'] = '[{}]'.format(','.join(columns))
@@ -33,30 +59,26 @@ def ps1search(format,table="mean",release="dr1",columns=None,
     else:
         return r.text
 
-def addfilter(dtab):
-    """Add filter name as column in detection table by translating filterID
-    
-    This modifies the table in place.  If the 'filter' column already exists,
-    the table is returned unchanged.
-    """
-    if 'filter' not in dtab.colnames:
-        # the filterID value goes from 1 to 5 for grizy
-        id2filter = np.array(list('grizy'))
-        dtab['filter'] = id2filter[(dtab['filterID']-1).data]
-        #print("FILTROOO")
-    return dtab
-
 def ps1ids(ra,dec,radius,nearest):
+    """Get ids (ps1 id) of objects in a radius with respect to ra and dec
+
+    Parameters
+    ----------
+    ra (float): (degrees) J2000 Right Ascension
+    dec (float): (degrees) J2000 Declination
+    radius (float): (degrees) Search radius (<= 0.5 degrees)
+    nearest (boolean): Indicate if return the id object most closest to point select with ra, dec.
+    """
     constraints = {'nDetections.gt':1}
     columns = ['objID','raMean','decMean']
     results = ps1cone(ra,dec,radius,release='dr2',columns=columns,**constraints)
-    results = ascii.read(results)
-    print(results)
 
     if len(results) <= 0:
         return -1
+    results = ascii.read(results)
 
-    elif nearest is True:
+
+    if nearest is True:
         #poner en otro lado, mas general
         angle = []
         c1 = SkyCoord(ra=ra,dec=dec,unit=u.degree)
@@ -74,10 +96,19 @@ def ps1ids(ra,dec,radius,nearest):
 
 
 def ps1curves(ra,dec,radius,format,nearest):
+    """Get light curves of objects in specific radio with respect ra and dec, and possible return the object most nearest to radio
 
+
+    Parameters
+    ----------
+    ra (float): (degrees) J2000 Right Ascension
+    dec (float): (degrees) J2000 Declination
+    radius (float): (degrees) Search radius (<= 0.5 degrees)
+    format: csv, votable
+    nearest: Indicate if return the object most closest to point select with ra, dec.
+    """
     ids = ps1ids(ra,dec,radius,nearest)
     ps1dic = {}
-    #print(ids)
     if ids == -1 :
         ps1dic['0'] = 'not found'
         return ps1dic
@@ -93,10 +124,8 @@ def ps1curves(ra,dec,radius,format,nearest):
             dresults = ascii.read(dresults)
             buf = io.StringIO()
             ascii.write(dresults,buf,format='csv')
-            #print(buf.getvalue())
             ps1dic[str(id)] =  buf.getvalue()
         else :
             ps1dic[str(id)] = dresults
-    #print(ps1dic)
     return ps1dic
 

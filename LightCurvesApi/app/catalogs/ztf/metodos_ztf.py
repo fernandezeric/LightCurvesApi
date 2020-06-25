@@ -7,7 +7,34 @@ from astropy import units as u
 from astropy.io.votable import parse,parse_single_table,from_table, writeto
 
 
+def id_nearest (ra,dec,radius,results):
+    """ Get object id most closet to ra dec
+
+    Parameters
+    ----------
+    ra
+    dec
+    radius
+    results
+    """
+    angle = []
+    c1 = SkyCoord(ra=ra,dec=dec,unit=u.degree)
+    for group in results.groups:
+        c2 = SkyCoord(group['ra'][0],group['dec'][0],unit=u.degree)
+        angle.append(c1.separation(c2))
+    return angle.index(min(angle))
+
 def zftcurves(ra,dec,radius,format,nearest):
+    """ Get light curves of ztf objects 
+
+    Parameters
+    ----------
+    ra (float): (degrees) 
+    dec (float): (degrees) 
+    radius: (float): (degrees) 
+    format: csv, votable
+    nearest: Indicate if return the object most closest to point select with ra, dec.
+    """
     baseurl="https://irsa.ipac.caltech.edu/cgi-bin/ZTF/nph_light_curves"
     data = {}
     data['POS']=f'CIRCLE {ra} {dec} {radius}'
@@ -31,13 +58,9 @@ def zftcurves(ra,dec,radius,format,nearest):
         results = result.group_by('oid')
 
         if nearest is True:
-            angle = []
-            c1 = SkyCoord(ra=ra,dec=dec,unit=u.degree)
-            for group in results.groups:
-                c2 = SkyCoord(group['ra'][0],group['dec'][0],unit=u.degree)
-                angle.append(c1.separation(c2))
 
-            minztf = angle.index(min(angle))
+            minztf = id_nearest(ra,dec,radius,results)
+            
             buf = io.StringIO()
             ascii.write(results.groups[minztf],buf,format='csv')
             ztfdic[str(results.groups[minztf]['oid'][0])] =  buf.getvalue()
@@ -63,12 +86,8 @@ def zftcurves(ra,dec,radius,format,nearest):
         tablas = table.group_by('oid')
 
         if nearest is True:
-            angle = []
-            c1 = SkyCoord(ra=ra,dec=dec,unit=u.degree)
-            for group in tablas.groups:
-                c2 = SkyCoord(group['ra'][0],group['dec'][0],unit=u.degree)
-                angle.append(c1.separation(c2))
-            minztf = angle.index(min(angle))
+            
+            minztf = id_nearest(ra,dec,radius,tablas)
 
             buf = io.BytesIO()
             votable = from_table(tablas.groups[minztf])
