@@ -43,20 +43,22 @@ def zftcurves(ra,dec,radius,format,nearest):
     result = requests.get(baseurl,params=data)
     ztfdic = {}
 
-    if result.status_code != 200:
+    if result.status_code != 200: 
         ztfdic['0'] = 'not found' 
-        return ztfdic #'not found'
+        return ztfdic #'not found' # change to more general
     
+    #if select csv format
     elif format == 'csv':
-        #print(result.text)
+
         result = ascii.read(result.text)
 
         if len(result) <= 0:
-            ztfdic['0'] = 'not found' 
-            return ztfdic #'not found'
+            ztfdic['-1'] = 'not found' 
+            return ztfdic # change to more general
 
         results = result.group_by('oid')
 
+        #the most close object to radius
         if nearest is True:
 
             minztf = id_nearest(ra,dec,radius,results)
@@ -66,6 +68,7 @@ def zftcurves(ra,dec,radius,format,nearest):
             ztfdic[str(results.groups[minztf]['oid'][0])] =  buf.getvalue()
             return ztfdic
 
+        # all objects in radius
         else:
             for group in results.groups:
                 buf = io.StringIO()
@@ -73,6 +76,7 @@ def zftcurves(ra,dec,radius,format,nearest):
                 ztfdic[str(group['oid'][0])] =  buf.getvalue()
             return ztfdic
 
+    # if select VOTable format
     else:
         votable = result.text.encode(encoding='UTF-8')
         bio = io.BytesIO(votable)
@@ -85,6 +89,7 @@ def zftcurves(ra,dec,radius,format,nearest):
 
         tablas = table.group_by('oid')
 
+        #the most close object to radius
         if nearest is True:
             
             minztf = id_nearest(ra,dec,radius,tablas)
@@ -94,6 +99,7 @@ def zftcurves(ra,dec,radius,format,nearest):
             writeto(votable,buf)
             ztfdic[str(tablas.groups[minztf]['oid'][0])] = (buf.getvalue().decode("utf-8"))
             return ztfdic
+        # all objects in radius
         else :
             for group in tablas.groups:
                 buf = io.BytesIO()

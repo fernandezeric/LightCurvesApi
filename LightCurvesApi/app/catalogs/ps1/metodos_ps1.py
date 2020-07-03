@@ -73,20 +73,24 @@ def ps1ids(ra,dec,radius,nearest):
     columns = ['objID','raMean','decMean']
     results = ps1cone(ra,dec,radius,release='dr2',columns=columns,**constraints)
 
-    if len(results) <= 0:
+
+    # if results.status_code != '200': 
+    #     return -99 #'not found' # change to more general
+
+    if len(results) <= 0: # if no return some object
         return -1
+
     results = ascii.read(results)
 
 
     if nearest is True:
-        #poner en otro lado, mas general
         angle = []
         c1 = SkyCoord(ra=ra,dec=dec,unit=u.degree)
         for re in results:
             c2 = SkyCoord(ra=re['raMean'],dec=re['decMean'],unit=u.degree)
             angle.append(c1.separation(c2))
         minps1 = angle.index(min(angle))
-        #por mientras
+        #temporal 
         temp = []
         temp.append(results[minps1]['objID'])
         return temp
@@ -98,7 +102,6 @@ def ps1ids(ra,dec,radius,nearest):
 def ps1curves(ra,dec,radius,format,nearest):
     """Get light curves of objects in specific radio with respect ra and dec, and possible return the object most nearest to radio
 
-
     Parameters
     ----------
     ra (float): (degrees) J2000 Right Ascension
@@ -109,9 +112,13 @@ def ps1curves(ra,dec,radius,format,nearest):
     """
     ids = ps1ids(ra,dec,radius,nearest)
     ps1dic = {}
-    if ids == -1 :
-        ps1dic['0'] = 'not found'
+    if ids == -1:
+        ps1dic['0'] = 'not found' # not object find
         return ps1dic
+    # #when request failed in api
+    # elif ids == -99: 
+    #     ps1dic['not found'] = 'result.status_code '
+    #     return ps1dic
 
     for id in ids:
         dconstraints = {'objID': id}

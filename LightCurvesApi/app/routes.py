@@ -9,15 +9,16 @@ swagger = Swagger(app)
 
 
 def generic_request(request,nearest=False):
-    print(request)
+    #print(request)
 
+    #if request is for hours-degree and not for ra,dec
     if "hours" in request.form:
-        coord = SkyCoord(request.form['hours'],frame='icrs')
+        coord = SkyCoord(request.form['hours'],frame='icrs') #transform coord
         ra = coord.ra.degree
         dec = coord.dec.degree
 
+    #if request is for ra,dec
     else:
-        print("1")
         ra = request.form['ra']
         dec = request.form['dec']
 
@@ -67,15 +68,19 @@ def radiodegree():
         parameters:
             - name: ra
               in: formData
-              type: string 
+              type: number 
               required: true
               default: 139.33444972
+
+            - name: dec
+              in: formData
+              type: number 
               required: true
               default: 68.6350604
 
             - name: radius
               in : formData
-              type: string
+              type: number
               required: true
               default: 0.0002777
 
@@ -144,19 +149,19 @@ def radio_degree_nearest():
         parameters:
             - name: ra
               in: formData
-              type: string 
+              type: number 
               required: true
               default: 139.33444972
 
             - name: dec
               in: formData
-              type: string 
+              type: number 
               required: true
               default: 68.6350604
 
             - name: radius
               in : formData
-              type: string
+              type: number
               required: true
               default: 0.0002777
 
@@ -204,7 +209,7 @@ def radiohours():
 
             - name: radius
               in : formData
-              type: string
+              type: number
               required: true
               default: 0.0002777
 
@@ -234,7 +239,6 @@ def radiohours():
                     $ref: '#/definitions/dictionary'
 
     """
-    print("?????????????????????????????????")
     format = request.form['format']
 
     if format not in {'csv','votable'}: 
@@ -257,7 +261,7 @@ def radiohoursnearest():
 
             - name: radius
               in : formData
-              type: string
+              type: number
               required: true
               default: 0.0002777
 
