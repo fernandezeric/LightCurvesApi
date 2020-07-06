@@ -5,11 +5,19 @@ from app.catalogs.ps1 import metodos_ps1 as mps1
 from app.catalogs.ztf import metodos_ztf as mztf
 from app import app
 
+
+app.config['SWAGGER'] = {
+    'title': 'LC API',
+    'version': 0.3,
+    'uiversion': 3,
+    'schemes': ['https','http']
+}
+
 swagger = Swagger(app)
 
 
 def generic_request(request,nearest=False):
-    #print(request)
+    # print("******",request,"******")
 
     #if request is for hours-degree and not for ra,dec
     if "hours" in request.form:
@@ -45,6 +53,8 @@ def hello_world():
     """ Example for swagger, this rute return a sweet message
         to ChikiMan.
         ---
+        tags:
+          - home
         definitions:
             mensaje:
                 type: string
@@ -65,6 +75,9 @@ def hello_world():
 def radiodegree():
     """ Return in dictionary with all data for the light curve objects from api ztf or ps1 in a radio.
         ---
+
+        tags:
+          - degree
         parameters:
             - name: ra
               in: formData
@@ -133,7 +146,7 @@ def radiodegree():
                 schema:
                     $ref: '#/definitions/dictionary'
 
-    """
+    """   
     format = request.form['format']
 
     if format not in {'csv','votable'}: 
@@ -146,6 +159,9 @@ def radiodegree():
 def radio_degree_nearest():
     """ Return in dictionary with all data for the light curve objects from api ztf or ps1 in a radio.
         ---
+
+        tags:
+          - degree
         parameters:
             - name: ra
               in: formData
@@ -195,17 +211,24 @@ def radio_degree_nearest():
 
     if format not in {'csv','votable'}: 
         return "Record not found", status.HTTP_400_BAD_REQUEST 
+    
+    res = generic_request(request,True)    
+    return make_response(res)
 
 @app.route('/radio-hours',methods=['POST'])
 def radiohours():
     """ Return in dictionary with all data for the light curve objects from api ztf or ps1 in a radio.
         ---
+
+        tags:
+          - hours
         parameters: 
             - name: hours
               in: formData
               type: string 
               required: true
               default: 1h12m43.2s +1d12m43s
+              description: Transform hours degree form with skycoord and set frame in 'icrs'
 
             - name: radius
               in : formData
@@ -252,12 +275,16 @@ def radiohours():
 def radiohoursnearest():
     """ Return dictionary of dictionaries with all data for the light curve object most nearest in radio from api ztf or ps1.
         ---
+
+        tags:
+          - hours
         parameters:
             - name: hours
               in: formData
               type: string 
               required: true
               default: 1h12m43.2s +1d12m43s
+              description: Transform hours degree form with skycoord and set frame in 'icrs'
 
             - name: radius
               in : formData
@@ -294,7 +321,7 @@ def radiohoursnearest():
     format = request.form['format']
 
     if format not in {'csv','votable'}: 
-        return "Record not found", status.HTTP_400_BAD_REQUEST 
+        return " Bad Format", status.HTTP_400_BAD_REQUEST 
     
     res = generic_request(request,True)    
     return make_response(res)
