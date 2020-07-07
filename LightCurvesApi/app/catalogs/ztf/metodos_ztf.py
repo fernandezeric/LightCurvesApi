@@ -44,7 +44,7 @@ def zftcurves(ra,dec,radius,format,nearest):
     ztfdic = {}
 
     if result.status_code != 200: 
-        ztfdic['0'] = 'not found' 
+        ztfdic['not found'] = result.status_code 
         return ztfdic #'not found' # change to more general
     
     #if select csv format

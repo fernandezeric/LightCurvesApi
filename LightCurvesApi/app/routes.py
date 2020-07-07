@@ -16,12 +16,12 @@ app.config['SWAGGER'] = {
 swagger = Swagger(app)
 
 
-def generic_request(request,nearest=False):
+def generic_request(request,nearest=False): 
     # print("******",request,"******")
 
-    #if request is for hours-degree and not for ra,dec
-    if "hours" in request.form:
-        coord = SkyCoord(request.form['hours'],frame='icrs') #transform coord
+    #if request is for hms-degree and not for ra,dec
+    if "hms" in request.form:
+        coord = SkyCoord(request.form['hms'],frame='icrs') #transform coord
         ra = coord.ra.degree
         dec = coord.dec.degree
 
@@ -34,6 +34,7 @@ def generic_request(request,nearest=False):
     catalog = request.form['catalog']
     format = request.form['format']
 
+    #create empty dictionary
     dic = {}
     if 'ps1' in catalog :
         ps1 = mps1.ps1curves(ra,dec,radius,format,nearest)
@@ -215,20 +216,20 @@ def radio_degree_nearest():
     res = generic_request(request,True)    
     return make_response(res)
 
-@app.route('/radio-hours',methods=['POST'])
-def radiohours():
+@app.route('/radio-hms',methods=['POST'])
+def radiohms():
     """ Return in dictionary with all data for the light curve objects from api ztf or ps1 in a radio.
         ---
 
         tags:
-          - hours
+          - hms
         parameters: 
-            - name: hours
+            - name: hms
               in: formData
               type: string 
               required: true
               default: 1h12m43.2s +1d12m43s
-              description: Transform hours degree form with skycoord and set frame in 'icrs'
+              description: Transform hms degree form with skycoord and set frame in 'icrs'
 
             - name: radius
               in : formData
@@ -271,20 +272,20 @@ def radiohours():
     return make_response(res)
 
 
-@app.route('/radio-hours-nearest',methods=['POST'])
-def radiohoursnearest():
+@app.route('/radio-hms-nearest',methods=['POST'])
+def radiohmsnearest():
     """ Return dictionary of dictionaries with all data for the light curve object most nearest in radio from api ztf or ps1.
         ---
 
         tags:
-          - hours
+          - hms
         parameters:
-            - name: hours
+            - name: hms
               in: formData
               type: string 
               required: true
               default: 1h12m43.2s +1d12m43s
-              description: Transform hours degree form with skycoord and set frame in 'icrs'
+              description: Transform hms degree form with skycoord and set frame in 'icrs'
 
             - name: radius
               in : formData
