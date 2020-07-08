@@ -229,7 +229,7 @@ def radiohms():
               type: string 
               required: true
               default: 1h12m43.2s +1d12m43s
-              description: Transform hms degree form with skycoord and set frame in 'icrs'
+              description: Transform hms to ra,dec form with skycoord and set frame in 'icrs'
 
             - name: radius
               in : formData
@@ -285,7 +285,7 @@ def radiohmsnearest():
               type: string 
               required: true
               default: 1h12m43.2s +1d12m43s
-              description: Transform hms degree form with skycoord and set frame in 'icrs'
+              description: Transform hms to ra,dec form with skycoord and set frame in 'icrs'
 
             - name: radius
               in : formData
