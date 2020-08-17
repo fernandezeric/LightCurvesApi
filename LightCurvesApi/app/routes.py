@@ -1,4 +1,4 @@
-from flask import request,send_file,jsonify, make_response
+from flask import request,send_file,jsonify, make_response,abort
 from flasgger import Swagger
 from astropy.coordinates import SkyCoord
 from app.catalogs.ps1 import metodos_ps1 as mps1
@@ -10,7 +10,10 @@ app.config['SWAGGER'] = {
     'title': 'LC API',
     'version': 0.3,
     'uiversion': 3,
-    'schemes': ['https','http']
+    'schemes': ['https','http'],
+    'description' : 'Lc API(beta name) es una api que tiene la finalidad de proporcionar la informacion de las curvas \
+                      de luz de objetos pertenecientes a diferentes api\'s, actualmente facilita la obtencion de \
+                        las apis de pan-starss (ps1) y ztf.'
 }
 
 swagger = Swagger(app)
@@ -19,13 +22,13 @@ swagger = Swagger(app)
 def generic_request(request,nearest=False): 
     # print("******",request,"******")
 
-    #if request is for hms-degree and not for ra,dec
+    #if request is 'hms-degree' and not 'ra,dec'
     if "hms" in request.form:
         coord = SkyCoord(request.form['hms'],frame='icrs') #transform coord
         ra = coord.ra.degree
         dec = coord.dec.degree
 
-    #if request is for ra,dec
+    #if request is 'ra,dec'
     else:
         ra = request.form['ra']
         dec = request.form['dec']
@@ -47,6 +50,16 @@ def generic_request(request,nearest=False):
         dic['curve_ztf'] = ztf
 
     return jsonify(dic)
+
+def cheack_format(format):
+  if format in {'csv','votable','json'}: 
+    return True
+  else: 
+    return False
+
+@app.errorhandler(404)
+def resource_not_found(e):
+    return jsonify(error=str(e)), 404
 
 
 @app.route('/')
@@ -74,7 +87,8 @@ def hello_world():
 #buscar por radio y que devuelva el id en ese catalogo
 @app.route('/radio-degree',methods=['POST'])
 def radiodegree():
-    """ Return in dictionary with all data for the light curve objects from api ztf or ps1 in a radio.
+    """ Retorna todos los datos de curva de luz perteneciente a los objetos encontrados en el radio indicado, bajo
+        la busqueda por ra,dec.
         ---
 
         tags:
@@ -101,8 +115,9 @@ def radiodegree():
             - name: format
               in: formData
               type: string
-              enum: ['csv', 'votable']
+              enum: ['csv', 'votable','json']
               required: true
+              description : Seleccionar formato de entrega 
               default: csv
 
             - name: catalog
@@ -111,6 +126,7 @@ def radiodegree():
               required: true
               enum: ['ztf', 'ps1','ztf,ps1']
               required: true
+              description : Seleccionar catalogos a consultar
               default: 'ztf,ps1'
 
         definitions:
@@ -139,26 +155,25 @@ def radiodegree():
 
         responses:
             200:
-                description: Dictionary with contein first value:key, with value is a catalog selected and value is
-                                a dictionary with key:value when key is a id in respective catalog and key is information in
-                                format request
+                description: Retorna un diccionario que en su interior contiene un diccionario por cada catalogo consultado, dentro de estos
+                              ultimos diccionarios corresponderan a la combinacion clave:valor - > id_objeto : datos_curva_de_luz, el formato del valor
+                              (datos de la curva), corresponde al indicado en 'format'.
                 
-               
                 schema:
                     $ref: '#/definitions/dictionary'
 
     """   
-    format = request.form['format']
-
-    if format not in {'csv','votable'}: 
-        return "Record not found", status.HTTP_400_BAD_REQUEST 
+    if not cheack_format(request.form['format']):
+        abort(404, description="Format not found")
+        return jsonify(resource)
 
     res = generic_request(request,False)    
     return make_response(res)
 
 @app.route('/radio-degree-nearest',methods=['POST'])
 def radio_degree_nearest():
-    """ Return in dictionary with all data for the light curve objects from api ztf or ps1 in a radio.
+    """ Retorna todos los datos de curva de luz perteneciente a el objeto mas cercano encontrado en el radio indicado, bajo
+        la busqueda por ra,dec.
         ---
 
         tags:
@@ -185,8 +200,9 @@ def radio_degree_nearest():
             - name: format
               in: formData
               type: string
-              enum: ['csv', 'votable']
+              enum: ['csv', 'votable','json']
               required: true
+              description : poner descripcion
               default: csv
 
             - name: catalog
@@ -199,26 +215,27 @@ def radio_degree_nearest():
 
         responses:
             200:
-                description: Dictionary with contein first value:key, with value is a catalog selected and value is
-                                a dictionary with key:value when key is a id in respective catalog and key is information in
-                                format request, in this case return only object if this exist in nearest radio selected.
+                description: Retorna un diccionario que en su interior contiene un diccionario por cada catalogo consultado, dentro de estos
+                              ultimos diccionarios corresponderan a la combinacion clave:valor - > id_objeto : datos_curva_de_luz, el formato del valor
+                              (datos de la curva), corresponde al indicado en 'format'. En caso de existir devuelve unicamente el objeto mas cercano a ra,dec
+                              seleccionado por cada catalogo.
                 
                
                 schema:
                     $ref: '#/definitions/dictionary'
 
     """
-    format = request.form['format']
-
-    if format not in {'csv','votable'}: 
-        return "Record not found", status.HTTP_400_BAD_REQUEST 
+    if not cheack_format(request.form['format']):
+        abort(404, description="Format not found")
+        return jsonify(resource)
     
     res = generic_request(request,True)    
     return make_response(res)
 
 @app.route('/radio-hms',methods=['POST'])
 def radiohms():
-    """ Return in dictionary with all data for the light curve objects from api ztf or ps1 in a radio.
+    """ Retorna todos los datos de curva de luz perteneciente a los objetos encontrados en el radio indicado, bajo
+        la busqueda por formato hms.
         ---
 
         tags:
@@ -240,8 +257,9 @@ def radiohms():
             - name: format
               in: formData
               type: string
-              enum: ['csv', 'votable']
+              enum: ['csv', 'votable','json']
               required: true
+              description : 
               default: csv
 
             - name: catalog
@@ -254,19 +272,18 @@ def radiohms():
 
         responses:
             200:
-                description: Dictionary with contein first value:key, with value is a catalog selected and value is
-                                a dictionary with key:value when key is a id in respective catalog and key is information in
-                                format request
+                description: Retorna un diccionario (json), que en su interior contiene un diccionario por cada catalogo consultado, dentro de estos
+                              ultimos diccionarios corresponderan a la combinacion clave:valor - > id_objeto : datos_curva_de_luz, el formato del valor
+                              (datos de la curva), corresponde al indicado en 'format'.
                 
                
                 schema:
                     $ref: '#/definitions/dictionary'
 
     """
-    format = request.form['format']
-
-    if format not in {'csv','votable'}: 
-        return "Record not found", status.HTTP_400_BAD_REQUEST 
+    if not cheack_format(request.form['format']):
+        abort(404, description="Format not found")
+        return jsonify(resource)
     
     res = generic_request(request,False)    
     return make_response(res)
@@ -274,7 +291,8 @@ def radiohms():
 
 @app.route('/radio-hms-nearest',methods=['POST'])
 def radiohmsnearest():
-    """ Return dictionary of dictionaries with all data for the light curve object most nearest in radio from api ztf or ps1.
+    """ Retorna todos los datos de curva de luz perteneciente a el objeto mas cercano encontrado en el radio indicado, bajo
+        la busqueda por hms.
         ---
 
         tags:
@@ -296,8 +314,9 @@ def radiohmsnearest():
             - name: format
               in: formData
               type: string
-              enum: ['csv', 'votable']
+              enum: ['csv', 'votable','json']
               required: true
+              description : poner descripcion
               default: csv
 
             - name: catalog
@@ -310,19 +329,19 @@ def radiohmsnearest():
 
         responses:
             200:
-                description: Dictionary with contein first value:key, with value is a catalog selected and value is
-                                a dictionary with key:value when key is a id in respective catalog and key is information in
-                                format request, in this case return only object if this exist in nearest radio selected.
+                description: Retorna un diccionario que en su interior contiene un diccionario por cada catalogo consultado, dentro de estos
+                              ultimos diccionarios corresponderan a la combinacion clave:valor - > id_objeto : datos_curva_de_luz, el formato del valor
+                              (datos de la curva), corresponde al indicado en 'format'. En caso de existir devuelve unicamente el objeto mas cercano a ra,dec
+                              seleccionado por cada catalogo.
                 
                
                 schema:
                     $ref: '#/definitions/dictionary'
 
     """
-    format = request.form['format']
-
-    if format not in {'csv','votable'}: 
-        return " Bad Format", status.HTTP_400_BAD_REQUEST 
+    if not cheack_format(request.form['format']):
+        abort(404, description="Format not found")
+        return jsonify(resource)
     
     res = generic_request(request,True)    
     return make_response(res)
