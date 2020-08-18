@@ -4,9 +4,9 @@ sys.path.append("..")
 
 from app import app
 
-def test_hello():
-    response = app.test_client().get('/')
-
-    print(response.data)
+def test_base_route():
+    client = app.test_client()
+    url = '/'
+    response = client.get(url)
+    assert response.get_data() == b'Buenos D\xc3\xadas, ChikiMan <3!'
     assert response.status_code == 200
-    assert response.data == b'Buenos D\xc3\xadas, ChikiMan <3!'
